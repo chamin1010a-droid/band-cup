@@ -1,0 +1,719 @@
+<!doctype html>
+<html lang="ko">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>밴드 취향 월드컵</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Black+Han+Sans&family=IBM+Plex+Mono:wght@500&family=IBM+Plex+Sans+KR:wght@400;500;700&display=swap">
+<style>
+/* 레이아웃: 폰 한 손 조작 기준의 단일 컬럼. 공연 셋리스트 종이처럼 번호·판수는 모노체로 */
+:root {
+  --bg: #EDEFF4;
+  --surface: #FFFFFF;
+  --ink: #161821;
+  --muted: #5E6478;
+  --line: #D5DAE5;
+  --accent: #2E47D0;
+  --accent-ink: #FFFFFF;
+  --accent-soft: #E1E6FB;
+  --warm: #C9771A;
+  --warm-soft: #F7E9D6;
+  --good: #2B8755;
+  --f-display: "Black Han Sans", "IBM Plex Sans KR", "Apple SD Gothic Neo", "Malgun Gothic", sans-serif;
+  --f-body: "IBM Plex Sans KR", "Apple SD Gothic Neo", "Malgun Gothic", sans-serif;
+  --f-mono: "IBM Plex Mono", ui-monospace, "Consolas", monospace;
+}
+@media (prefers-color-scheme: dark) {
+  :root:not([data-theme="light"]) {
+    --bg: #10121A; --surface: #1A1D28; --ink: #ECEEF5; --muted: #9AA1B5; --line: #2C3142;
+    --accent: #8396FF; --accent-ink: #0E1020; --accent-soft: #232A4D;
+    --warm: #F0AE57; --warm-soft: #3A2C18; --good: #5CC48A;
+    color-scheme: dark;
+  }
+}
+:root[data-theme="dark"] {
+  --bg: #10121A; --surface: #1A1D28; --ink: #ECEEF5; --muted: #9AA1B5; --line: #2C3142;
+  --accent: #8396FF; --accent-ink: #0E1020; --accent-soft: #232A4D;
+  --warm: #F0AE57; --warm-soft: #3A2C18; --good: #5CC48A;
+  color-scheme: dark;
+}
+* { box-sizing: border-box; }
+[hidden] { display: none !important; }
+body {
+  margin: 0;
+  background: var(--bg); color: var(--ink);
+  font-family: var(--f-body); font-size: 15px; line-height: 1.55;
+  padding-left: max(16px, env(safe-area-inset-left, 0px));
+  padding-right: max(16px, env(safe-area-inset-right, 0px));
+  padding-block: 20px 48px;
+}
+.wrap { max-width: 620px; margin: 0 auto; display: flex; flex-direction: column; gap: 20px; }
+header { display: flex; justify-content: space-between; align-items: flex-end; gap: 12px; flex-wrap: wrap; }
+h1 { font-family: var(--f-display); font-weight: 400; font-size: 30px; line-height: 1.1; margin: 0; letter-spacing: -0.01em; text-wrap: balance; }
+h2 { font-size: 17px; margin: 0; text-wrap: balance; }
+.steps { display: flex; gap: 6px; font-family: var(--f-mono); font-size: 12px; color: var(--muted); }
+.steps span { padding: 3px 8px; border: 1px solid var(--line); border-radius: 99px; }
+.steps span.on { background: var(--ink); color: var(--bg); border-color: var(--ink); }
+.panel { background: var(--surface); border: 1px solid var(--line); border-radius: 14px; padding: 20px; display: flex; flex-direction: column; gap: 14px; }
+.muted { color: var(--muted); }
+.small { font-size: 13px; }
+p { margin: 0; }
+label.field { display: flex; flex-direction: column; gap: 6px; font-weight: 500; }
+input[type="text"] {
+  font: inherit; padding: 11px 12px; border-radius: 10px; border: 1px solid var(--line);
+  background: var(--bg); color: var(--ink); width: 100%; min-width: 0;
+}
+input[type="text"]:focus-visible, button:focus-visible { outline: 2px solid var(--accent); outline-offset: 2px; }
+button { font: inherit; cursor: pointer; border: 0; background: none; color: inherit; }
+.btn { padding: 11px 16px; border-radius: 10px; font-weight: 700; border: 1px solid var(--line); background: var(--surface); }
+.btn.primary { background: var(--accent); color: var(--accent-ink); border-color: var(--accent); }
+.btn:disabled { opacity: 0.4; cursor: not-allowed; }
+.row { display: flex; gap: 10px; flex-wrap: wrap; align-items: center; }
+.row.end { justify-content: flex-end; }
+.spacer { flex: 1; }
+ol.how { margin: 0; padding-left: 20px; display: flex; flex-direction: column; gap: 4px; }
+
+/* 앎 체크 */
+.group-title { font-family: var(--f-mono); font-size: 12px; letter-spacing: 0.08em; color: var(--muted); text-transform: uppercase; }
+.klist { display: flex; flex-direction: column; }
+.krow { display: flex; align-items: center; gap: 10px; padding: 9px 0; border-bottom: 1px solid var(--line); }
+.krow:last-child { border-bottom: 0; }
+.kname { flex: 1; min-width: 0; font-weight: 500; overflow-wrap: anywhere; }
+.seg { display: inline-flex; border: 1px solid var(--line); border-radius: 9px; overflow: hidden; flex-shrink: 0; }
+.seg button { padding: 6px 10px; font-size: 13px; color: var(--muted); border-left: 1px solid var(--line); }
+.seg button:first-child { border-left: 0; }
+.seg button[aria-pressed="true"][data-v="0"] { background: var(--bg); color: var(--ink); font-weight: 700; }
+.seg button[aria-pressed="true"][data-v="1"] { background: var(--accent); color: var(--accent-ink); font-weight: 700; }
+.tag-added { font-size: 11px; font-family: var(--f-mono); color: var(--warm); background: var(--warm-soft); padding: 1px 6px; border-radius: 99px; margin-left: 6px; }
+.x { color: var(--muted); font-size: 18px; padding: 0 4px; }
+.warn { color: var(--warm); font-size: 13px; }
+.sticky-bar {
+  position: sticky; bottom: 0; background: var(--surface); border: 1px solid var(--line); border-radius: 14px;
+  padding: 12px 14px; display: flex; gap: 10px; align-items: center; flex-wrap: wrap;
+  padding-bottom: calc(12px + env(safe-area-inset-bottom, 0px));
+}
+.num { font-family: var(--f-mono); font-variant-numeric: tabular-nums; }
+
+/* 비교 */
+.q { font-family: var(--f-display); font-weight: 400; font-size: 24px; text-align: center; margin: 4px 0 0; }
+.vs { display: grid; grid-template-columns: 1fr auto 1fr; gap: 10px; align-items: stretch; }
+.pick {
+  min-height: 150px; border-radius: 14px; border: 2px solid var(--line); background: var(--surface);
+  display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 8px; padding: 14px;
+  font-size: 20px; font-weight: 700; text-align: center; overflow-wrap: anywhere; min-width: 0;
+  transition: border-color .12s, transform .12s;
+}
+.pick:hover { border-color: var(--accent); }
+.pick:active { transform: scale(0.98); }
+.pick .key { font-family: var(--f-mono); font-size: 11px; font-weight: 500; color: var(--muted); }
+.vs-mid { align-self: center; font-family: var(--f-display); color: var(--muted); font-size: 18px; }
+.progress { height: 6px; background: var(--line); border-radius: 99px; overflow: hidden; }
+.progress > i { display: block; height: 100%; background: var(--accent); }
+.rep-note { font-size: 12px; color: var(--muted); text-align: center; min-height: 18px; }
+
+/* 결과 */
+.stats { display: grid; grid-template-columns: repeat(3, 1fr); gap: 10px; }
+.stat { border: 1px solid var(--line); border-radius: 12px; padding: 12px; display: flex; flex-direction: column; gap: 2px; min-width: 0; }
+.stat b { font-family: var(--f-mono); font-size: 22px; font-weight: 500; }
+.stat span { font-size: 12px; color: var(--muted); }
+.rank { list-style: none; margin: 0; padding: 0; display: flex; flex-direction: column; gap: 6px; }
+.rank li { display: grid; grid-template-columns: 30px minmax(0, 1fr) 54px; gap: 10px; align-items: center; }
+.rank .pos { font-family: var(--f-mono); color: var(--muted); text-align: right; }
+.rank .nm { display: flex; flex-direction: column; gap: 3px; min-width: 0; }
+.rank .nm b { font-weight: 500; overflow-wrap: anywhere; }
+.bar { height: 6px; background: var(--line); border-radius: 99px; overflow: hidden; }
+.bar > i { display: block; height: 100%; background: var(--accent); }
+.rank li.ghead { display: block; font-family: var(--f-mono); font-size: 12px; letter-spacing: 0.08em; color: var(--muted); padding-top: 10px; border-top: 1px solid var(--line); }
+.rank li.ghead:first-child { border-top: 0; padding-top: 0; color: var(--warm); }
+.rank .rec { font-family: var(--f-mono); font-size: 12px; color: var(--muted); text-align: right; font-variant-numeric: tabular-nums; }
+.chips { display: flex; flex-wrap: wrap; gap: 6px; }
+.chip { font-size: 13px; padding: 3px 10px; border-radius: 99px; border: 1px solid var(--line); color: var(--muted); }
+.steps-btn { font: inherit; padding: 3px 10px; border-radius: 99px; border: 1px solid var(--accent); color: var(--accent); cursor: pointer; }
+.steps-btn.on { background: var(--accent); color: var(--accent-ink); }
+.chip.me { border-color: var(--accent); color: var(--accent); }
+.tabs { display: flex; gap: 6px; }
+.tabs button { padding: 6px 14px; border-radius: 99px; border: 1px solid var(--line); color: var(--muted); font-size: 13px; }
+.tabs button[aria-selected="true"] { background: var(--ink); color: var(--bg); border-color: var(--ink); font-weight: 700; }
+.rank.band li { grid-template-columns: 30px minmax(0, 1fr) 76px; }
+.rank.band .bar { position: relative; overflow: visible; }
+.rank.band .bar > i { border-radius: 99px; }
+.rank.band .bar > s { position: absolute; top: -3px; width: 2px; height: 12px; background: var(--ink); text-decoration: none; }
+.listen { display: flex; flex-direction: column; }
+.lrow { display: flex; flex-direction: column; gap: 2px; padding: 8px 0; border-bottom: 1px solid var(--line); }
+.lrow:last-child { border-bottom: 0; }
+p.warn.panel { color: var(--warm); background: var(--warm-soft); border-color: var(--warm); }
+textarea { width: 100%; min-height: 90px; font-family: var(--f-mono); font-size: 11px; background: var(--bg); color: var(--ink); border: 1px solid var(--line); border-radius: 10px; padding: 10px; }
+.preview-note { font-size: 12px; color: var(--muted); border-top: 1px dashed var(--line); padding-top: 12px; }
+@media (max-width: 420px) {
+  .pick { min-height: 120px; font-size: 17px; }
+  .seg button { padding: 6px 8px; }
+  .stat b { font-size: 18px; }
+}
+@media (prefers-reduced-motion: reduce) { .pick { transition: none; } }
+.howto { margin: 0; padding-left: 20px; display: flex; flex-direction: column; gap: 6px; font-weight: 500; }
+.notes { display: flex; flex-direction: column; gap: 6px; }
+</style>
+</head>
+<body>
+
+<div class="wrap">
+  <header>
+    <h1>밴드 취향 월드컵</h1>
+    <div class="steps" id="steps"></div>
+  </header>
+  <main id="app"></main>
+</div>
+
+<script>
+const BASE = [
+  ["데이식스","M","국내"],["잔나비","M","국내"],["실리카겔","M","국내"],["너드커넥션","M","국내"],
+  ["터치드","F","국내"],["루시","M","국내"],["넬","M","국내"],["국카스텐","M","국내"],["혁오","M","국내"],
+  ["검정치마","M","국내"],["쏜애플","M","국내"],["YB","M","국내"],["크라잉넛","M","국내"],["이승윤","M","국내"],
+  ["리도어","M","국내"],["라쿠나","M","국내"],["자우림","F","국내"],["체리필터","F","국내"],["새소년","F","국내"],
+  ["한로로","F","국내"],["백예린 / The Volunteers","F","국내"],["윤마치","F","국내"],["우효","F","국내"],["정우","F","국내"],
+  ["Green Day","M","해외"],["Oasis","M","해외"],["Muse","M","해외"],["Radiohead","M","해외"],["Coldplay","M","해외"]
+];
+const ALIAS = {
+  day6:"데이식스", 윤도현밴드:"YB", 윤도현:"YB", 와이비:"YB", thevolunteers:"백예린 / The Volunteers",
+  volunteers:"백예린 / The Volunteers", 발룬티어스:"백예린 / The Volunteers", 그린데이:"Green Day",
+  오아시스:"Oasis", 뮤즈:"Muse", 라디오헤드:"Radiohead", 콜드플레이:"Coldplay", silicagel:"실리카겔",
+  hyukoh:"혁오", nell:"넬", lucy:"루시", jannabi:"잔나비", touched:"터치드", lacuna:"라쿠나", redoor:"리도어",
+  thornapple:"쏜애플", 쏜애플:"쏜애플", nerdconnection:"너드커넥션", guckkasten:"국카스텐", jaurim:"자우림",
+  cherryfilter:"체리필터", sesoneon:"새소년", hanroro:"한로로", crying:"크라잉넛", cryingnut:"크라잉넛"
+};
+const MAX_Q = 50, MIN_GAMES = 3, TOP = 8, KEY = "bandcup_v1";
+const LEVEL = ["모름","앎"];
+
+function fresh() { return { v: 1, name: "", phase: "intro", know: {}, added: [], matches: [], cur: null, extra: 0 }; }
+function load() { try { const s = JSON.parse(localStorage.getItem(KEY)); return s && s.v === 1 ? s : null; } catch (e) { return null; } }
+let S = load() || fresh();
+for (const k in S.know) if (S.know[k] > 1) S.know[k] = 1; // 예전 3단계 기록 호환
+
+/* 공유 상태: 구글 시트(Apps Script 웹앱)에 멤버마다 한 줄. 5초마다 전체를 다시 받아옴 */
+const API = "https://script.google.com/macros/s/AKfycbyjTazpc-mKNLLG7Yt-z6Zl5Hb9SyY6nH5fhvRQx5VjHEI7OfxogT3ioIKuYFdPCFFh/exec"; // Apps Script 웹앱 주소. 비우면 혼자 하는 모드
+const ADMIN = new URLSearchParams(location.search).get("admin") || "";
+const POLL_MS = 5000;
+function myId() {
+  try {
+    let id = localStorage.getItem("bandcup_id");
+    if (!id) { id = Array.from(crypto.getRandomValues(new Uint8Array(12)), b => b.toString(16).padStart(2, "0")).join(""); localStorage.setItem("bandcup_id", id); }
+    return id;
+  } catch (e) { return null; }
+}
+let SHARED = null;          // { uid, isOwner } — 서버 주소가 없거나 연결이 안 되면 null
+let MEMBERS = {};           // 다른 멤버 기록
+let CONFIG = { open: false };
+let READY = false, SAVE_FAIL = false, VIEW = "me";
+let writing = false, dirty = false, timer = null;
+
+async function call(body) {
+  // text/plain으로 보내야 브라우저 사전 확인(CORS preflight) 없이 Apps Script에 닿음
+  const res = await fetch(API, { method: "POST", headers: { "Content-Type": "text/plain;charset=utf-8" }, body: JSON.stringify(body) });
+  const out = await res.json();
+  if (!out.ok) throw new Error(out.error || "failed");
+  return out;
+}
+function save() {
+  try { localStorage.setItem(KEY, JSON.stringify(S)); } catch (e) {}
+  if (!SHARED) return;
+  dirty = true;
+  clearTimeout(timer);
+  timer = setTimeout(flush, 800);
+}
+async function flush() {
+  if (writing || !dirty) return;
+  writing = true; dirty = false;
+  try {
+    await call({ action: "save", id: SHARED.uid, data: { ...S, updatedAt: Date.now() } });
+    if (SAVE_FAIL) { SAVE_FAIL = false; render(); }
+  } catch (e) {
+    dirty = true;
+    if (!SAVE_FAIL) { SAVE_FAIL = true; render(); }
+    setTimeout(flush, 4000 + Math.random() * 2000);
+  }
+  writing = false;
+  if (dirty && !SAVE_FAIL) flush();
+}
+function others() { return Object.entries(MEMBERS).filter(([id]) => !SHARED || id !== SHARED.uid); }
+function comparingOpen() { return !SHARED || CONFIG.open; }
+
+const esc = s => String(s).replace(/[&<>"']/g, c => ({ "&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;","'":"&#39;" }[c]));
+const norm = s => String(s).toLowerCase().replace(/[^0-9a-z가-힣]/g, "");
+const sig = x => 1 / (1 + Math.exp(-x));
+const pick = arr => arr[Math.floor(Math.random() * arr.length)];
+
+function items() {
+  const base = BASE.map(([name, g, region]) => ({ name, g, region, added: false }));
+  const seen = new Set(base.map(it => norm(it.name)));
+  const extra = [];
+  const add = (name, by, mine) => {
+    const n = norm(name);
+    if (!n || seen.has(n)) return;
+    seen.add(n); extra.push({ name, g: null, region: "직접 추가", added: true, mine, by });
+  };
+  S.added.forEach(n => add(n, S.name, true));
+  for (const [, m] of others()) (m.added || []).forEach(n => add(n, m.name, false));
+  return base.concat(extra);
+}
+function knownOf(st, list) { return (list || items()).filter(it => ((st.know || {})[it.name] || 0) >= 1).map(it => it.name); }
+function known() { return knownOf(S); }
+function target() { return Math.min(MAX_Q, 3 * known().length) + S.extra; }
+
+function findDup(input) {
+  const n = norm(input);
+  if (!n) return null;
+  if (ALIAS[n]) return ALIAS[n];
+  for (const it of items()) {
+    const m = norm(it.name);
+    if (m === n || (n.length >= 2 && m.includes(n)) || (m.length >= 2 && n.includes(m))) return it.name;
+  }
+  return null;
+}
+
+/* Bradley-Terry, 약한 L2 사전분포로 전승/전패 팀도 무한대로 안 튀게 */
+function fit(names, matches) {
+  const idx = Object.fromEntries(names.map((n, i) => [n, i]));
+  const t = new Array(names.length).fill(0);
+  const ms = matches.filter(m => m.a in idx && m.b in idx);
+  for (let it = 0; it < 400; it++) {
+    const g = t.map(v => -0.15 * v);
+    for (const m of ms) {
+      const i = idx[m.a], j = idx[m.b], r = m.y - sig(t[i] - t[j]);
+      g[i] += r; g[j] -= r;
+    }
+    for (let k = 0; k < t.length; k++) t[k] += 0.2 * g[k];
+  }
+  return Object.fromEntries(names.map((n, i) => [n, t[i]]));
+}
+
+/* 점수의 불확실성: 판이 적거나 결과가 뻔한 판만 했으면 크게 나옴 */
+function uncert(names, th, matches) {
+  const info = Object.fromEntries(names.map(n => [n, 0.15]));
+  for (const m of matches) {
+    if (!(m.a in info) || !(m.b in info)) continue;
+    const p = sig(th[m.a] - th[m.b]), w = p * (1 - p);
+    info[m.a] += w; info[m.b] += w;
+  }
+  return Object.fromEntries(names.map(n => [n, 1 / Math.sqrt(info[n])]));
+}
+
+const pairKey = (a, b) => [a, b].sort().join("\u0000");
+
+function nextPair() {
+  const K = known(), ms = S.matches.filter(m => K.includes(m.a) && K.includes(m.b));
+  const cnt = Object.fromEntries(K.map(n => [n, 0]));
+  const pc = {};
+  for (const m of ms) {
+    cnt[m.a]++; cnt[m.b]++;
+    const k = pairKey(m.a, m.b); pc[k] = (pc[k] || 0) + 1;
+  }
+  const last = S.matches[S.matches.length - 1];
+  const recent = last ? [last.a, last.b] : [];
+  let a, b;
+  const minC = Math.min(...K.map(n => cnt[n]));
+  // 아는 팀이 많으면 훑기를 2판으로 줄여서 상위 집중에 판을 남김
+  if (minC < (K.length >= 16 ? 2 : MIN_GAMES)) {
+    // 훑기: 모든 팀이 최소 판수를 채울 때까지, 덜 나온 팀부터 처음 보는 상대와
+    const low = K.filter(n => cnt[n] === minC && !recent.includes(n));
+    a = pick(low.length ? low : K.filter(n => cnt[n] === minC));
+    const others = K.filter(n => n !== a).map(n => ({ n, s: cnt[n] + 10 * (pc[pairKey(a, n)] || 0) + (recent.includes(n) ? 2 : 0) + Math.random() }));
+    others.sort((p, q) => p.s - q.s);
+    b = others[0].n;
+  } else {
+    // 상위 집중: 상위 TOP 안에 들 가능성이 남은 팀끼리, 결과를 예측하기 어려운 쌍부터
+    const th = fit(K, ms), se = uncert(K, th, ms);
+    const order = [...K].sort((p, q) => th[q] - th[p]);
+    const k = Math.min(TOP, K.length);
+    const cut = th[order[k - 1]];
+    let pool = K.filter(n => th[n] + se[n] >= cut);
+    if (pool.length < 2) pool = order.slice(0, Math.max(2, k));
+    let best = null;
+    for (let x = 0; x < pool.length; x++) for (let y = x + 1; y < pool.length; y++) {
+      const p = pool[x], q = pool[y];
+      const s = Math.abs(th[p] - th[q]) / Math.sqrt(se[p] ** 2 + se[q] ** 2)
+        + 0.6 * (pc[pairKey(p, q)] || 0)
+        + (recent.includes(p) || recent.includes(q) ? 0.8 : 0)
+        + Math.random() * 0.2;
+      if (!best || s < best.s) best = { p, q, s };
+    }
+    a = best.p; b = best.q;
+  }
+  return Math.random() < 0.5 ? { a, b, rep: null } : { a: b, b: a, rep: null };
+}
+
+function answer(y) {
+  const c = S.cur;
+  if (!c) return;
+  S.matches.push({ a: c.a, b: c.b, y, rep: c.rep });
+  S.cur = S.matches.length >= target() ? null : nextPair();
+  if (!S.cur) S.phase = "result";
+  save(); render();
+}
+function undo() {
+  const m = S.matches.pop();
+  if (!m) return;
+  S.cur = { a: m.a, b: m.b, rep: m.rep };
+  S.phase = "compare";
+  save(); render();
+}
+
+/* 순위 + 동급 그룹: 그룹 맨 위 팀과 차이가 불확실성의 1.5배를 넘어야 다음 그룹 */
+function ranking(st = S, list) {
+  const ms = st.matches || [];
+  const K = knownOf(st, list), th = fit(K, ms), se = uncert(K, th, ms);
+  if (!K.length) return [];
+  const mean = K.reduce((s, n) => s + th[n], 0) / (K.length || 1);
+  const games = Object.fromEntries(K.map(n => [n, 0]));
+  for (const m of ms) { if (m.a in games) games[m.a]++; if (m.b in games) games[m.b]++; }
+  const r = K.map(n => ({ name: n, theta: th[n], se: se[n], score: Math.round(100 * sig(th[n] - mean)), games: games[n] }))
+    .sort((p, q) => q.theta - p.theta);
+  let g = 1, lead = r[0];
+  r.forEach((x, i) => {
+    if (i > 0 && (lead.theta - x.theta) / Math.sqrt(lead.se ** 2 + x.se ** 2) > 1.5) { g++; lead = x; }
+    x.group = g;
+  });
+  return r;
+}
+
+/* ---------- 화면 ---------- */
+const app = document.getElementById("app");
+function renderSteps() {
+  const order = [["know", "1 앎 체크"], ["compare", "2 비교"], ["result", "3 결과"]];
+  const cur = VIEW === "band" || S.phase === "intro" ? "" : S.phase;
+  const el = document.getElementById("steps");
+  el.innerHTML = order.map(([k, l]) => `<span class="${k === cur ? "on" : ""}">${l}</span>`).join("")
+    + (SHARED && READY ? `<button class="steps-btn ${VIEW === "band" ? "on" : ""}" id="bandbtn">밴드 결과</button>` : "");
+  const bb = document.getElementById("bandbtn");
+  if (bb) bb.onclick = () => { VIEW = VIEW === "band" ? "me" : "band"; render(); window.scrollTo(0, 0); };
+}
+
+function renderIntro() {
+  app.innerHTML = `
+  <section class="panel">
+    <h2>하는 법</h2>
+    <ol class="howto">
+      <li>아는 팀을 모두 체크한다. (추가 가능!)</li>
+      <li>더 공연 취향에 가까운 밴드를 하나씩 고른다.</li>
+      <li>다 하면 팀원 결과도 확인 가능!</li>
+    </ol>
+    <div class="notes muted">
+      <p>토너먼트 방식은 아니고 최신 알고리즘을 도입했습니다. 하하</p>
+      <p>5분 정도 걸리니 한번에 하시기를 추천드립니다. 서버를 대충 만들어서요!</p>
+    </div>
+    <label class="field" for="nm">닉네임
+      <input type="text" id="nm" maxlength="20" value="${esc(S.name)}">
+    </label>
+    <div class="row end"><button class="btn primary" id="go">시작하기</button></div>
+  </section>`;
+  const nm = document.getElementById("nm");
+  const go = () => { S.name = nm.value.trim(); S.phase = "know"; save(); render(); };
+  document.getElementById("go").onclick = go;
+  nm.onkeydown = e => { if (e.key === "Enter") go(); };
+}
+
+function segHTML(name) {
+  const v = S.know[name] || 0;
+  return `<div class="seg" role="group" aria-label="${esc(name)} 아는 정도">${LEVEL.map((l, i) =>
+    `<button data-k="${esc(name)}" data-v="${i}" aria-pressed="${v === i}">${l}</button>`).join("")}</div>`;
+}
+
+function renderKnow() {
+  const all = items();
+  const groups = ["국내", "해외", "직접 추가"].map(g => [g, all.filter(it => it.region === g)]).filter(([, l]) => l.length);
+  const K = known().length, q = Math.min(MAX_Q, 3 * K);
+  app.innerHTML = `
+  <section class="panel">
+    <h2>${S.name ? esc(S.name) + "님, " : ""}아는 팀을 체크해 주세요</h2>
+    <p class="muted small">곡을 하나라도 떠올릴 수 있으면 "앎". 모르는 팀은 비교에 안 나와요.</p>
+    ${groups.map(([g, list]) => `
+      <div class="group-title">${g}</div>
+      <div class="klist">${list.map(it => `
+        <div class="krow">
+          <div class="kname">${esc(it.name)}${it.added ? `<span class="tag-added">${it.mine ? "내가 추가" : esc(it.by || "멤버") + " 추가"}</span>` : ""}</div>
+          ${segHTML(it.name)}
+          ${it.mine ? `<button class="x" data-del="${esc(it.name)}" aria-label="${esc(it.name)} 삭제">×</button>` : ""}
+        </div>`).join("")}
+      </div>`).join("")}
+  </section>
+  ${SHARED ? `<section class="panel">
+    <h2>참여 현황 <span class="muted small num">${others().length + 1}명</span></h2>
+    <div class="chips">
+      <span class="chip me">${esc(S.name || "나")} · ${progressLabel(S)}</span>
+      ${others().map(([, m]) => `<span class="chip">${esc(m.name || "닉네임 없음")} · ${progressLabel(m)}</span>`).join("")}
+    </div>
+  </section>` : ""}
+  <section class="panel">
+    <h2>목록에 없는 팀 추가 <span class="muted small num">${S.added.length}/2</span></h2>
+    <div class="row">
+      <input type="text" id="addin" maxlength="30" placeholder="팀 또는 가수 이름" ${S.added.length >= 2 ? "disabled" : ""} style="flex:1">
+      <button class="btn" id="addbtn" ${S.added.length >= 2 ? "disabled" : ""}>추가</button>
+    </div>
+    <p class="warn" id="addwarn" hidden></p>
+  </section>
+  <div class="sticky-bar">
+    <span class="num small">아는 팀 <b>${K}</b> · 비교 <b>${q}</b>판</span>
+    <span class="spacer"></span>
+    <button class="btn" id="back">닉네임 수정</button>
+    ${comparingOpen()
+      ? `<button class="btn primary" id="start" ${K < 2 ? "disabled" : ""}>비교 시작</button>`
+      : SHARED.isOwner
+        ? `<button class="btn primary" id="open">모두에게 비교 열기</button>`
+        : `<span class="small muted">모두 체크하면 방장이 비교를 열어요</span>`}
+  </div>`;
+  const op = document.getElementById("open");
+  if (op) op.onclick = async () => {
+    op.disabled = true;
+    try { await call({ action: "open", key: ADMIN }); CONFIG = { open: true }; }
+    catch (e) { op.disabled = false; op.textContent = "열기 실패, 다시 누르기"; return; }
+    renderKnowKeepScroll();
+  };
+
+  app.querySelectorAll(".seg button").forEach(b => b.onclick = () => {
+    S.know[b.dataset.k] = +b.dataset.v; save(); renderKnowKeepScroll();
+  });
+  app.querySelectorAll("[data-del]").forEach(b => b.onclick = () => {
+    const n = b.dataset.del;
+    S.added = S.added.filter(x => x !== n); delete S.know[n]; save(); renderKnowKeepScroll();
+  });
+  const addin = document.getElementById("addin"), warn = document.getElementById("addwarn");
+  const add = () => {
+    const v = addin.value.trim();
+    if (!v) return;
+    const dup = findDup(v);
+    if (dup) { warn.textContent = `목록에 있는 "${dup}"과 같은 팀 같아요. 위에서 체크해 주세요.`; warn.hidden = false; return; }
+    S.added.push(v); S.know[v] = 1; save(); renderKnowKeepScroll();
+  };
+  document.getElementById("addbtn").onclick = add;
+  addin.onkeydown = e => { if (e.key === "Enter") add(); };
+  addin.oninput = () => { warn.hidden = true; };
+  document.getElementById("back").onclick = () => { S.phase = "intro"; save(); render(); };
+  const st = document.getElementById("start");
+  if (st) st.onclick = () => {
+    // 체크를 바꿨으면 모르게 된 팀이 걸린 현재 쌍은 새로 뽑기
+    const K = known();
+    if (S.cur && !(K.includes(S.cur.a) && K.includes(S.cur.b))) S.cur = null;
+    if (S.matches.length >= target()) { S.phase = "result"; }
+    else { S.phase = "compare"; if (!S.cur) S.cur = nextPair(); }
+    save(); render();
+  };
+}
+/* 다른 멤버 변경이 실시간으로 들어와도 입력 중인 글자와 스크롤은 유지 */
+function renderKnowKeepScroll() {
+  const y = window.scrollY, inp = document.getElementById("addin");
+  const val = inp ? inp.value : "", focused = inp && document.activeElement === inp;
+  renderKnow();
+  const n = document.getElementById("addin");
+  if (n && val) n.value = val;
+  if (n && focused) n.focus();
+  window.scrollTo(0, y);
+}
+function progressLabel(m) {
+  const ph = m.phase || "intro", n = (m.matches || []).length;
+  if (ph === "result") return "완료";
+  if (ph === "compare" || n) return `비교 ${n}판`;
+  if (ph === "know") return `체크 중 (${knownOf(m).length}팀)`;
+  return "입장";
+}
+
+function renderCompare() {
+  const c = S.cur, done = S.matches.length, tot = target();
+  app.innerHTML = `
+  <section class="panel">
+    <div class="row small"><span class="num">${done + 1} / ${tot}</span><span class="spacer"></span>
+      <button class="btn" id="undo" ${done ? "" : "disabled"} style="padding:6px 12px">되돌리기</button></div>
+    <div class="progress"><i style="width:${(100 * done / tot).toFixed(1)}%"></i></div>
+    <p class="q">누구 곡을 공연하고 싶어?</p>
+    <div class="vs">
+      <button class="pick" id="pa">${esc(c.a)}<span class="key">← 왼쪽</span></button>
+      <span class="vs-mid">VS</span>
+      <button class="pick" id="pb">${esc(c.b)}<span class="key">오른쪽 →</span></button>
+    </div>
+    <div class="row" style="justify-content:center"><button class="btn" id="tie">비슷해요 (↓)</button></div>
+    <p class="rep-note">듣기 좋은 팀이 아니라, 우리 밴드가 무대에서 하고 싶은 팀으로 골라 주세요.</p>
+  </section>
+  <div class="row"><button class="btn" id="toKnow">앎 체크로 돌아가기</button></div>`;
+  document.getElementById("pa").onclick = () => answer(1);
+  document.getElementById("pb").onclick = () => answer(0);
+  document.getElementById("tie").onclick = () => answer(0.5);
+  document.getElementById("undo").onclick = undo;
+  document.getElementById("toKnow").onclick = () => { S.phase = "know"; save(); render(); };
+}
+
+function renderResult() {
+  const r = ranking();
+  const unknown = items().filter(it => !(S.know[it.name] >= 1)).map(it => it.name);
+  const g1 = r.filter(x => x.group === 1).length;
+  app.innerHTML = `
+  <section class="panel">
+    <h2>${S.name ? esc(S.name) + "님의 " : ""}공연 취향 순위</h2>
+    <div class="stats">
+      <div class="stat"><b>${S.matches.length}</b><span>비교한 판</span></div>
+      <div class="stat"><b>${r.length}</b><span>아는 팀</span></div>
+      <div class="stat"><b>${g1}</b><span>1그룹 팀</span></div>
+    </div>
+    <p class="muted small">점수는 "평균적인 팀과 붙었을 때 이 팀을 고를 확률"이에요. 이긴 횟수가 아니라 누구를 이겼는지로 계산해요. 같은 그룹 안의 순서는 아직 확실하지 않다는 뜻이에요.</p>
+    <ol class="rank">${r.map((x, i) => `
+      ${i === 0 || r[i - 1].group !== x.group ? `<li class="ghead">${x.group}그룹</li>` : ""}
+      <li><span class="pos">${i + 1}</span>
+        <span class="nm"><b>${esc(x.name)}</b><span class="bar"><i style="width:${x.score}%"></i></span></span>
+        <span class="rec">${x.games}판</span></li>`).join("")}
+    </ol>
+    <div class="row">
+      <button class="btn primary" id="more">10판 더 해서 정밀하게</button>
+      <button class="btn" id="toKnow">앎 체크 고치기</button>
+    </div>
+  </section>
+  ${unknown.length ? `<section class="panel">
+    <h2>모름으로 둔 팀 <span class="muted small num">${unknown.length}</span></h2>
+    <p class="muted small">다른 멤버들이 높게 고르면, 나중에 대표곡 한 곡만 들어보고 오면 돼요.</p>
+    <div class="chips">${unknown.map(n => `<span class="chip">${esc(n)}</span>`).join("")}</div>
+  </section>` : ""}
+  <div class="row">
+    ${SHARED ? `<button class="btn primary" id="seeBand">밴드 결과 보기</button>` : ""}
+    <span class="spacer"></span><button class="btn" id="reset">처음부터 다시</button>
+  </div>`;
+  document.getElementById("more").onclick = () => { S.extra += 10; S.phase = "compare"; S.cur = nextPair(); save(); render(); };
+  document.getElementById("toKnow").onclick = () => { S.phase = "know"; save(); render(); };
+  const sb = document.getElementById("seeBand");
+  if (sb) sb.onclick = () => { VIEW = "band"; render(); window.scrollTo(0, 0); };
+  const reset = document.getElementById("reset");
+  let armed = false;
+  reset.onclick = () => {
+    if (!armed) { armed = true; reset.textContent = "내 기록이 지워져요. 한 번 더 누르기"; setTimeout(() => { armed = false; reset.textContent = "처음부터 다시"; }, 3000); return; }
+    const name = S.name; S = fresh(); S.name = name; save(); render();
+  };
+}
+
+/* ---------- 밴드 결과 ---------- */
+let BAND_TAB = "all";
+function bandData() {
+  const list = items();
+  const people = [["me", S]].concat(others())
+    .filter(([, m]) => (m.matches || []).length >= 5)
+    .map(([id, m]) => {
+      const r = ranking(m, list);
+      return { id, name: m.name || "닉네임 없음", know: m.know || {}, score: Object.fromEntries(r.map(x => [x.name, x.score])) };
+    });
+  const gender = Object.fromEntries(BASE.map(([n, g]) => [n, g]));
+  const rows = list.map(it => {
+    const knowers = people.filter(p => it.name in p.score);
+    const sc = knowers.map(p => p.score[it.name]);
+    return {
+      name: it.name, g: gender[it.name] || null,
+      n: knowers.length,
+      min: sc.length ? Math.min(...sc) : null,
+      mean: sc.length ? Math.round(sc.reduce((a, b) => a + b, 0) / sc.length) : null,
+      missing: people.filter(p => !(it.name in p.score)).map(p => p.name)
+    };
+  }).filter(r => r.n > 0);
+  return { people, rows };
+}
+
+function renderBand() {
+  const { people, rows } = bandData();
+  const total = others().length + 1;
+  const tabs = [["all", "전체"], ["F", "여보컬"], ["M", "남보컬"]];
+  // 아는 사람이 절반 이상인 팀만 순위에, 기준은 최저점 → 평균
+  const half = Math.max(1, Math.ceil(people.length / 2));
+  const shown = rows.filter(r => BAND_TAB === "all" || r.g === BAND_TAB)
+    .filter(r => r.n >= half)
+    .sort((a, b) => (b.min - a.min) || (b.mean - a.mean));
+  const listen = rows.filter(r => r.missing.length && r.n >= 1)
+    .sort((a, b) => b.mean - a.mean).slice(0, 8);
+  app.innerHTML = `
+  <section class="panel">
+    <h2>밴드 공통 취향</h2>
+    <p class="muted small">비교를 5판 이상 한 사람만 반영돼요. 지금 <b class="num">${people.length}</b>/${total}명. 순서는 <b>아는 사람 중 가장 낮게 준 점수</b> 기준이라, 위에 있을수록 아무도 싫어하지 않는 팀이에요.</p>
+    <div class="tabs" role="tablist">${tabs.map(([k, l]) =>
+      `<button role="tab" aria-selected="${BAND_TAB === k}" data-tab="${k}">${l}</button>`).join("")}</div>
+    ${people.length === 0 ? `<p class="muted">아직 비교를 끝낸 사람이 없어요. 한 명이라도 5판 이상 하면 여기 나타나요.</p>` : `
+    <ol class="rank band">${shown.map((r, i) => `
+      <li><span class="pos">${i + 1}</span>
+        <span class="nm"><b>${esc(r.name)}</b><span class="bar"><i style="width:${r.min}%"></i><s style="left:${r.mean}%"></s></span></span>
+        <span class="rec">${r.min} / ${r.mean}<br>${r.n}/${people.length}명</span></li>`).join("") || `<li class="ghead">이 탭에 해당하는 팀이 아직 없어요</li>`}
+    </ol>
+    <p class="muted small">막대는 최저점, 세로 눈금은 평균. 오른쪽 숫자는 최저점 / 평균, 아는 사람 수예요.</p>`}
+  </section>
+  ${listen.length ? `<section class="panel">
+    <h2>들어보고 와줘</h2>
+    <p class="muted small">아는 사람들 평균이 높은데 모르는 멤버가 있는 팀이에요. 대표곡 한 곡만 들어보고 앎으로 바꿔 주세요.</p>
+    <div class="listen">${listen.map(r => `
+      <div class="lrow"><b>${esc(r.name)}</b><span class="small muted">평균 ${r.mean} · 모름: ${r.missing.map(esc).join(", ")}</span></div>`).join("")}
+    </div>
+  </section>` : ""}
+  <div class="row"><button class="btn" id="backMe">내 화면으로</button></div>`;
+  app.querySelectorAll("[data-tab]").forEach(b => b.onclick = () => { BAND_TAB = b.dataset.tab; renderBand(); });
+  document.getElementById("backMe").onclick = () => { VIEW = "me"; render(); window.scrollTo(0, 0); };
+}
+
+function render() {
+  renderSteps();
+  if (!READY) { app.innerHTML = `<section class="panel"><p class="muted">불러오는 중…</p></section>`; return; }
+  if (VIEW === "band" && SHARED) { renderBand(); return; }
+  if (S.phase === "compare" && !comparingOpen()) S.phase = "know";
+  if (S.phase === "compare" && !S.cur) S.phase = known().length >= 2 ? "result" : "know";
+  ({ intro: renderIntro, know: renderKnow, compare: renderCompare, result: renderResult }[S.phase] || renderIntro)();
+  if (SAVE_FAIL) app.insertAdjacentHTML("afterbegin", `<p class="warn panel">서버에 저장이 안 되고 있어요. 이 화면을 닫지 말고 잠시 기다리면 자동으로 다시 저장해요.</p>`);
+}
+
+/* 다른 멤버 변경이 들어왔을 때: 비교 중이거나 이름 입력 중이면 화면을 건드리지 않음 */
+function onRemoteChange() {
+  if (!READY) return;
+  if (VIEW === "band") renderBand();
+  else if (S.phase === "know") renderKnowKeepScroll();
+  else if (S.phase === "result") render();
+  else renderSteps();
+}
+
+async function fetchState() {
+  const res = await fetch(API + "?t=" + Date.now());
+  const out = await res.json();
+  if (!out.ok) throw new Error(out.error || "failed");
+  return out;
+}
+
+async function poll() {
+  if (document.hidden) return;
+  try {
+    const st = await fetchState();
+    const was = CONFIG.open, before = JSON.stringify(MEMBERS);
+    MEMBERS = st.members || {};
+    CONFIG = { open: !!(st.config && st.config.open) };
+    if (JSON.stringify(MEMBERS) !== before || was !== CONFIG.open) onRemoteChange();
+  } catch (e) {}
+}
+
+async function init() {
+  const uid = API ? myId() : null;
+  if (uid) {
+    try {
+      const st = await fetchState();
+      SHARED = { uid, isOwner: !!ADMIN };
+      MEMBERS = st.members || {};
+      CONFIG = { open: !!(st.config && st.config.open) };
+      const mine = MEMBERS[uid];
+      if (mine && mine.v === 1) S = { ...fresh(), ...mine };
+      else if (S.phase !== "intro" || S.matches.length) save(); // 서버에 없는 기록은 올림
+      setInterval(poll, POLL_MS);
+      document.addEventListener("visibilitychange", () => { if (!document.hidden) poll(); });
+    } catch (e) { SHARED = null; }
+  }
+  READY = true; render();
+  if (API && !SHARED) app.insertAdjacentHTML("afterbegin", `<p class="warn panel">서버에 연결이 안 돼서 혼자 하는 모드로 열렸어요. 새로고침해 보고, 계속 이러면 방장에게 알려 주세요.</p>`);
+}
+
+document.addEventListener("keydown", e => {
+  if (!READY || VIEW === "band" || S.phase !== "compare" || !S.cur || e.target.tagName === "INPUT") return;
+  if (e.key === "ArrowLeft") { e.preventDefault(); answer(1); }
+  else if (e.key === "ArrowRight") { e.preventDefault(); answer(0); }
+  else if (e.key === "ArrowDown") { e.preventDefault(); answer(0.5); }
+  else if (e.key === "Backspace") { e.preventDefault(); undo(); }
+});
+
+render();
+init();
+</script>
+</body>
+</html>
