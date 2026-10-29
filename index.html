@@ -133,7 +133,9 @@ ol.how { margin: 0; padding-left: 20px; display: flex; flex-direction: column; g
 .steps-btn { font: inherit; padding: 3px 10px; border-radius: 99px; border: 1px solid var(--accent); color: var(--accent); cursor: pointer; }
 .steps-btn.on { background: var(--accent); color: var(--accent-ink); }
 .chip.me { border-color: var(--accent); color: var(--accent); }
-.tabs { display: flex; gap: 6px; }
+button.chip { cursor: pointer; }
+button.chip[aria-pressed="true"] { background: var(--ink); color: var(--bg); border-color: var(--ink); font-weight: 700; }
+.tabs { display: flex; gap: 6px; flex-wrap: wrap; }
 .tabs button { padding: 6px 14px; border-radius: 99px; border: 1px solid var(--line); color: var(--muted); font-size: 13px; }
 .tabs button[aria-selected="true"] { background: var(--ink); color: var(--bg); border-color: var(--ink); font-weight: 700; }
 .rank.band li { grid-template-columns: 30px minmax(0, 1fr) 76px; }
@@ -541,6 +543,16 @@ function renderCompare() {
   document.getElementById("toKnow").onclick = () => { S.phase = "know"; save(); render(); };
 }
 
+/* 개인 순위 목록: 내 결과와 밴드 결과의 멤버별 탭이 같이 씀 */
+function rankListHTML(r) {
+  return `<ol class="rank">${r.map((x, i) => `
+      ${i === 0 || r[i - 1].group !== x.group ? `<li class="ghead">${x.group}그룹</li>` : ""}
+      <li><span class="pos">${i + 1}</span>
+        <span class="nm"><b>${esc(x.name)}</b><span class="bar"><i style="width:${x.score}%"></i></span></span>
+        <span class="rec">${x.games}판</span></li>`).join("")}
+    </ol>`;
+}
+
 function renderResult() {
   const r = ranking();
   const unknown = items().filter(it => !(S.know[it.name] >= 1)).map(it => it.name);
@@ -554,12 +566,7 @@ function renderResult() {
       <div class="stat"><b>${g1}</b><span>1그룹 팀</span></div>
     </div>
     <p class="muted small">점수는 "평균적인 팀과 붙었을 때 이 팀을 고를 확률"이에요. 이긴 횟수가 아니라 누구를 이겼는지로 계산해요. 같은 그룹 안의 순서는 아직 확실하지 않다는 뜻이에요.</p>
-    <ol class="rank">${r.map((x, i) => `
-      ${i === 0 || r[i - 1].group !== x.group ? `<li class="ghead">${x.group}그룹</li>` : ""}
-      <li><span class="pos">${i + 1}</span>
-        <span class="nm"><b>${esc(x.name)}</b><span class="bar"><i style="width:${x.score}%"></i></span></span>
-        <span class="rec">${x.games}판</span></li>`).join("")}
-    </ol>
+    ${rankListHTML(r)}
     <div class="row">
       <button class="btn primary" id="more">10판 더 해서 정밀하게</button>
       <button class="btn" id="toKnow">앎 체크 고치기</button>
@@ -611,10 +618,46 @@ function bandData() {
   return { people, rows };
 }
 
+/* 멤버별 탭: 한 사람을 골라 그 사람의 개인 순위를 그대로 보여줌 */
+let BAND_MEMBER = "me";
+function memberViewHTML() {
+  const all = [["me", S]].concat(others());
+  if (!all.some(([id]) => id === BAND_MEMBER)) BAND_MEMBER = "me";
+  const m = all.find(([id]) => id === BAND_MEMBER)[1];
+  const n = (m.matches || []).length;
+  const list = items();
+  const unknown = list.filter(it => !((m.know || {})[it.name] >= 1)).map(it => it.name);
+  const body = n < 5
+    ? `<p class="muted">아직 진행 중이에요 (${n}판). 5판 이상 비교하면 순위가 보여요.</p>`
+    : `${rankListHTML(ranking(m, list))}
+      ${unknown.length ? `<div class="group-title">모름 · ${unknown.length}팀</div>
+      <div class="chips">${unknown.map(u => `<span class="chip">${esc(u)}</span>`).join("")}</div>` : ""}`;
+  return `
+    <div class="chips">${all.map(([id, p]) =>
+      `<button class="chip" data-member="${esc(id)}" aria-pressed="${id === BAND_MEMBER}">${esc(id === "me" ? (p.name || "나") + " (나)" : p.name || "닉네임 없음")}</button>`).join("")}</div>
+    <h2>${esc(m.name || "닉네임 없음")}님의 공연 취향 순위</h2>
+    ${body}`;
+}
+
 function renderBand() {
   const { people, rows } = bandData();
   const total = others().length + 1;
-  const tabs = [["all", "전체"], ["F", "여보컬"], ["M", "남보컬"]];
+  const tabs = [["all", "전체"], ["F", "여보컬"], ["M", "남보컬"], ["member", "멤버별"]];
+  if (BAND_TAB === "member") {
+    app.innerHTML = `
+    <section class="panel">
+      <h2>밴드 결과</h2>
+      <p class="muted small">한 사람씩 골라서 각자의 순위를 볼 수 있어요. 같은 그룹 안의 순서는 아직 확실하지 않다는 뜻이에요.</p>
+      <div class="tabs" role="tablist">${tabs.map(([k, l]) =>
+        `<button role="tab" aria-selected="${BAND_TAB === k}" data-tab="${k}">${l}</button>`).join("")}</div>
+      ${memberViewHTML()}
+    </section>
+    <div class="row"><button class="btn" id="backMe">내 화면으로</button></div>`;
+    app.querySelectorAll("[data-tab]").forEach(b => b.onclick = () => { BAND_TAB = b.dataset.tab; renderBand(); });
+    app.querySelectorAll("[data-member]").forEach(b => b.onclick = () => { BAND_MEMBER = b.dataset.member; renderBand(); });
+    document.getElementById("backMe").onclick = () => { VIEW = "me"; render(); window.scrollTo(0, 0); };
+    return;
+  }
   // 아는 사람이 절반 이상인 팀만 순위에, 기준은 최저점 → 평균
   const half = Math.max(1, Math.ceil(people.length / 2));
   const shown = rows.filter(r => BAND_TAB === "all" || r.g === BAND_TAB)
