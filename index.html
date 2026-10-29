@@ -141,7 +141,7 @@ button.chip[aria-pressed="true"] { background: var(--ink); color: var(--bg); bor
 .rank.band li { grid-template-columns: 30px minmax(0, 1fr) 76px; }
 .rank.band .bar { position: relative; overflow: visible; }
 .rank.band .bar > i { border-radius: 99px; }
-.rank.band .bar > s { position: absolute; top: -3px; width: 2px; height: 12px; background: var(--ink); text-decoration: none; }
+.rank.band .pts { font-size: 18px; font-weight: 500; color: var(--ink); }
 .listen { display: flex; flex-direction: column; }
 .lrow { display: flex; flex-direction: column; gap: 2px; padding: 8px 0; border-bottom: 1px solid var(--line); }
 .lrow:last-child { border-bottom: 0; }
@@ -595,26 +595,30 @@ function renderResult() {
 
 /* ---------- 밴드 결과 ---------- */
 let BAND_TAB = "all";
+/* 종합: 각자 1위 10점, 2위 9점 … 10위 1점, 그 아래와 모름은 0점. 7명 점수를 합산 */
+const POINT_DEPTH = 10;
 function bandData() {
   const list = items();
   const people = [["me", S]].concat(others())
     .filter(([, m]) => (m.matches || []).length >= 5)
     .map(([id, m]) => {
       const r = ranking(m, list);
-      return { id, name: m.name || "닉네임 없음", know: m.know || {}, score: Object.fromEntries(r.map(x => [x.name, x.score])) };
+      const rank = Object.fromEntries(r.map((x, i) => [x.name, i + 1]));
+      return { id, name: m.name || "닉네임 없음", rank, size: r.length };
     });
   const gender = Object.fromEntries(BASE.map(([n, g]) => [n, g]));
   const rows = list.map(it => {
-    const knowers = people.filter(p => it.name in p.score);
-    const sc = knowers.map(p => p.score[it.name]);
-    return {
-      name: it.name, g: gender[it.name] || null,
-      n: knowers.length,
-      min: sc.length ? Math.min(...sc) : null,
-      mean: sc.length ? Math.round(sc.reduce((a, b) => a + b, 0) / sc.length) : null,
-      missing: people.filter(p => !(it.name in p.score)).map(p => p.name)
-    };
-  }).filter(r => r.n > 0);
+    let total = 0, top = 0, low = 0;
+    const missing = [];
+    for (const p of people) {
+      const k = p.rank[it.name];
+      if (!k) { missing.push(p.name); continue; }
+      total += Math.max(0, POINT_DEPTH + 1 - k);
+      if (k <= POINT_DEPTH) top++;
+      if (k > p.size * 2 / 3) low++;  // 그 사람이 아는 팀 중 하위 1/3
+    }
+    return { name: it.name, g: gender[it.name] || null, total, top, low, missing };
+  });
   return { people, rows };
 }
 
@@ -658,32 +662,31 @@ function renderBand() {
     document.getElementById("backMe").onclick = () => { VIEW = "me"; render(); window.scrollTo(0, 0); };
     return;
   }
-  // 아는 사람이 절반 이상인 팀만 순위에, 기준은 최저점 → 평균
-  const half = Math.max(1, Math.ceil(people.length / 2));
+  const maxPts = POINT_DEPTH * Math.max(1, people.length);
   const shown = rows.filter(r => BAND_TAB === "all" || r.g === BAND_TAB)
-    .filter(r => r.n >= half)
-    .sort((a, b) => (b.min - a.min) || (b.mean - a.mean));
-  const listen = rows.filter(r => r.missing.length && r.n >= 1)
-    .sort((a, b) => b.mean - a.mean).slice(0, 8);
+    .filter(r => r.total > 0)
+    .sort((a, b) => (b.total - a.total) || (b.top - a.top));
+  const listen = rows.filter(r => r.missing.length && r.total > 0)
+    .sort((a, b) => b.total - a.total).slice(0, 8);
   app.innerHTML = `
   <section class="panel">
     <h2>밴드 공통 취향</h2>
-    <p class="muted small">비교를 5판 이상 한 사람만 반영돼요. 지금 <b class="num">${people.length}</b>/${total}명. 순서는 <b>아는 사람 중 가장 낮게 준 점수</b> 기준이라, 위에 있을수록 아무도 싫어하지 않는 팀이에요.</p>
+    <p class="muted small">각자의 순위에서 1위 10점, 2위 9점 … 10위 1점을 주고 모두 더했어요. 11위 아래와 모르는 팀은 0점이에요. 비교를 5판 이상 한 <b class="num">${people.length}</b>/${total}명이 반영됐어요.</p>
     <div class="tabs" role="tablist">${tabs.map(([k, l]) =>
       `<button role="tab" aria-selected="${BAND_TAB === k}" data-tab="${k}">${l}</button>`).join("")}</div>
     ${people.length === 0 ? `<p class="muted">아직 비교를 끝낸 사람이 없어요. 한 명이라도 5판 이상 하면 여기 나타나요.</p>` : `
     <ol class="rank band">${shown.map((r, i) => `
       <li><span class="pos">${i + 1}</span>
-        <span class="nm"><b>${esc(r.name)}</b><span class="bar"><i style="width:${r.min}%"></i><s style="left:${r.mean}%"></s></span></span>
-        <span class="rec">${r.min} / ${r.mean}<br>${r.n}/${people.length}명</span></li>`).join("") || `<li class="ghead">이 탭에 해당하는 팀이 아직 없어요</li>`}
-    </ol>
-    <p class="muted small">막대는 최저점, 세로 눈금은 평균. 오른쪽 숫자는 최저점 / 평균, 아는 사람 수예요.</p>`}
+        <span class="nm"><b>${esc(r.name)}</b><span class="bar"><i style="width:${(100 * r.total / maxPts).toFixed(1)}%"></i></span>
+          <span class="small muted">상위 10위 ${r.top}명${r.low ? ` · 하위권 ${r.low}명` : ""}${r.missing.length ? ` · 모름 ${r.missing.length}명` : ""}</span></span>
+        <span class="rec"><b class="pts">${r.total}</b>점</span></li>`).join("") || `<li class="ghead">이 탭에 해당하는 팀이 아직 없어요</li>`}
+    </ol>`}
   </section>
   ${listen.length ? `<section class="panel">
     <h2>들어보고 와줘</h2>
-    <p class="muted small">아는 사람들 평균이 높은데 모르는 멤버가 있는 팀이에요. 대표곡 한 곡만 들어보고 앎으로 바꿔 주세요.</p>
+    <p class="muted small">총점이 높은데 모르는 멤버가 있는 팀이에요. 대표곡 한 곡만 들어보고 앎으로 바꿔 주세요.</p>
     <div class="listen">${listen.map(r => `
-      <div class="lrow"><b>${esc(r.name)}</b><span class="small muted">평균 ${r.mean} · 모름: ${r.missing.map(esc).join(", ")}</span></div>`).join("")}
+      <div class="lrow"><b>${esc(r.name)}</b><span class="small muted">${r.total}점 · 모름: ${r.missing.map(esc).join(", ")}</span></div>`).join("")}
     </div>
   </section>` : ""}
   <div class="row"><button class="btn" id="backMe">내 화면으로</button></div>`;
